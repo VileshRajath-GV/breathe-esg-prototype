@@ -214,13 +214,18 @@ export default function App() {
                     2. Ingesting Raw Client Streams
                   </h4>
                   <p className="text-sm text-gray-600 leading-relaxed mb-3">
-                    Sustainability analysts can drop files directly into our upload stream. Ready-to-use testing files are prepared directly in your workspace directory:
+                    Sustainability analysts can drop files directly into our upload stream. Ready-to-use testing files are available in the GitHub repository:
                   </p>
                   <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs space-y-2">
-                    <p className="font-semibold text-gray-800">📁 Test Files Folder Location:</p>
-                    <code className="block bg-white p-2 border border-gray-300 rounded font-mono text-[11px] text-blue-700 select-all">
-                      c:\Users\adhes\OneDrive\Desktop\breathe_esg_prototype\breathe_esg_prototype\sample_files\
-                    </code>
+                    <p className="font-semibold text-gray-800">📁 Sample Files on GitHub:</p>
+                    <a
+                      href="https://github.com/VileshRajath-GV/breathe-esg-prototype/tree/main/sample_files"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-white p-2 border border-gray-300 rounded font-mono text-[11px] text-blue-700 hover:text-blue-900 hover:underline break-all"
+                    >
+                      github.com/VileshRajath-GV/breathe-esg-prototype/tree/main/sample_files
+                    </a>
                     <ul className="list-disc pl-5 space-y-1 mt-2 text-gray-500 font-semibold">
                       <li><strong>SAP ECC Fuel CSV</strong>: Simulates legacy ERP transaction data with German technical column names (`WERKS`, `MENGE`, etc.) and localized date formatting.</li>
                       <li><strong>Utility Electricity CSV</strong>: Mimics portal billing downloads with overlapping days that cross calendar months.</li>
@@ -262,12 +267,13 @@ export default function App() {
               {/* Modal Footer */}
               <div className="px-8 py-5 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                 <a
-                  href="file:///c:/Users/adhes/OneDrive/Desktop/breathe_esg_prototype/breathe_esg_prototype/Breathe_ESG_Complete_Project_Guide.html"
+                  href="https://github.com/VileshRajath-GV/breathe-esg-prototype"
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-eco-green-600 hover:text-eco-green-800 font-extrabold"
                 >
                   <FileText className="w-4 h-4" />
-                  Open Complete Offline HTML Manual
+                  View Project on GitHub
                 </a>
                 <button
                   onClick={() => setShowHelp(false)}
