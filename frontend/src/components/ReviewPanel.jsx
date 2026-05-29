@@ -140,10 +140,10 @@ export default function ReviewPanel({ tenantId, refreshTrigger }) {
   };
 
   const filters = [
-    { key: "all", label: "All Records", color: "eco-green" },
-    { key: "validated", label: "✓ Validated", color: "eco-green" },
-    { key: "review", label: "⚠ Review Needed", color: "yellow" },
-    { key: "error", label: "✗ Errors", color: "red" },
+    { key: "all",       label: "All Records",     activeClass: "bg-eco-green-600 text-white border-eco-green-600" },
+    { key: "validated", label: "✓ Validated",      activeClass: "bg-eco-green-600 text-white border-eco-green-600" },
+    { key: "review",    label: "⚠ Review Needed",  activeClass: "bg-yellow-500 text-white border-yellow-500" },
+    { key: "error",     label: "✗ Errors",         activeClass: "bg-red-600 text-white border-red-600" },
   ];
 
   return (
@@ -181,7 +181,7 @@ export default function ReviewPanel({ tenantId, refreshTrigger }) {
                   onClick={() => setFilterStatus(filter.key)}
                   className={`px-5 py-2.5 rounded-lg font-bold text-sm transition border-2 ${
                     filterStatus === filter.key
-                      ? "bg-eco-green-600 text-white border-eco-green-600 shadow-md"
+                      ? `${filter.activeClass} shadow-md`
                       : "bg-gray-100 text-gray-700 border-transparent hover:bg-gray-200"
                   }`}
                 >
