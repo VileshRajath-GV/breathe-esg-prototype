@@ -3,6 +3,7 @@ services:
   - type: web
     name: breathe-esg-backend
     env: python
+    plan: free
     buildCommand: "cd backend && pip install -r requirements.txt && python manage.py migrate --noinput && python seed.py"
     startCommand: "cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
@@ -17,6 +18,7 @@ services:
   - type: web
     name: breathe-esg-frontend
     env: static
+    plan: free
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: "frontend/dist"
     envVars:
