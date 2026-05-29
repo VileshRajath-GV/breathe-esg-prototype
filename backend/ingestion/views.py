@@ -22,7 +22,10 @@ class FileIngestionView(views.APIView):
         if not file_obj:
             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if source_type not in ['SAP', 'Utility', 'Travel']:
+        # Normalise to uppercase so frontend mixed-case values ('Utility', 'Travel') also work
+        source_type = source_type.upper() if source_type else ''
+
+        if source_type not in ['SAP', 'UTILITY', 'TRAVEL']:
             return Response({"error": "Invalid source_type. Must be 'SAP', 'Utility', or 'Travel'."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not tenant_id:
@@ -81,7 +84,7 @@ class FileIngestionView(views.APIView):
         except Exception as e:
             # Mark batch failed
             batch.status = 'FAILED'
-            batch.error_summary = str(e)
+            batch.error_summary = {'error': str(e)}
             batch.save()
             
             # Try to cleanup temp file if it still exists
