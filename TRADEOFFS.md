@@ -1,21 +1,33 @@
 # TRADEOFFS.md: Deliberate Scoping & Exclusions
 
-To deliver a high-quality, auditable, and mathematically rigorous prototype, we deliberately chose to exclude three complex features, opting instead for robust, standard-conforming designs.
+To deliver a rigorous, auditable prototype, three complex features were deliberately excluded in favour of more deterministic and compliance-safe alternatives.
 
 ---
 
 ## 1. No PDF OCR Utility Bill Parsing
-* **Why it was excluded**: Facilities teams often suggest parsing PDF invoices directly using OCR (Optical Character Recognition) tools like Tesseract or AWS Textract. However, utility layouts are notorious for changing formats without notice. Even a tiny OCR error (e.g., misreading a `1` as a `7` or missing a decimal point) causes massive, silent reporting errors that fail audit standards.
-* **Our Alternative Choice**: We chose to ingest **Portal CSV Billing Exports**. Billing portals already provide structured, clean text databases. This is the industry-preferred onboarding mechanism for enterprise clients because it is 100% accurate and mathematically reliable.
+**Why excluded**: OCR on utility PDF invoices (Tesseract, AWS Textract) is notoriously fragile — layout changes between billing periods break parsers silently. A single misread decimal (e.g. `1` → `7`) causes massive silent reporting errors that fail audit standards.
+
+**Our alternative**: Ingest **Portal CSV Billing Exports**. Billing portals provide clean, structured data. This is the industry-preferred onboarding mechanism for enterprise clients.
 
 ---
 
 ## 2. No Live Third-Party Emissions Factor API Sync
-* **Why it was excluded**: Connecting to external live carbon factor APIs (like Climatiq or UK DEFRA) introduces massive external dependencies. If the external service goes down, ingestion freezes. More importantly, emissions factors change annually; a live, automatic sync can silently change historical emissions calculations, violating audit baseline locking standards.
-* **Our Alternative Choice**: We built an **Internal Static Emissions Factor Register** within our ingestion parsers. This ensures consistent, deterministic calculations. Factors are version-controlled and tied to specific ingestion batches, satisfying auditors who require absolute reproducibility.
+**Why excluded**: Live carbon factor APIs (Climatiq, UK DEFRA) introduce external dependencies — if the API goes down, ingestion stalls. More critically, factors change annually; an automatic sync can silently retroactively change historical emissions, violating audit baseline locking standards.
+
+**Our alternative**: A versioned **`EmissionFactor` database table** (introduced in the production data model). Each factor record carries `valid_from` / `valid_to` year fields. Factors are pinned to ingestion batches, so calculations are permanently reproducible. This satisfies auditors who require absolute determinism.
 
 ---
 
-## 3. No Multi-Tiered Role-Based Access Control (RBAC) & Custom Workflows
-* **Why it was excluded**: Building complex workflow routing (e.g., "Sustainability Specialist uploads -> Sustainability Manager reviews -> Director signs off -> Auditor locks") involves significant database and state-machine overhead. For a prototype, building a fully generic RBAC engine takes time away from refining the core data models and normalization logic.
-* **Our Alternative Choice**: We designed a streamlined **Immutable Audit Lock (`is_locked`)** model accompanied by an automatic `AuditTrail` ledger. Every analyst action (approval, flagging, rejecting) is recorded in a flat history database. This satisfies the core security and compliance requirements without introducing unnecessary workflow complexity.
+## 3. No Multi-Tiered RBAC Workflow Engine
+**Why excluded**: A full workflow router (Analyst uploads → Manager reviews → Director approves → Auditor locks) involves significant state-machine overhead. For a prototype, building a generic RBAC engine diverts effort from core data quality and normalisation logic.
+
+**Our alternative**: A formal **`ReviewStatus` state machine** (`NEEDS_REVIEW → AUTO_APPROVED → APPROVED → LOCKED`) enforced at the DB model layer, combined with an append-only **`AuditEntry`** log that records every status transition with actor, timestamp, and JSON before/after deltas.
+
+> **Future path**: The `ESGUser.role` field (`ADMIN`, `ANALYST`, `AUDITOR`) and the `ReviewStatus` state machine are designed to be extended into a full role-gated workflow without schema changes.
+
+---
+
+## 4. SQLite → PostgreSQL Upgrade Path (Completed)
+**Original prototype**: Used SQLite, which is ephemeral on Render's free tier (wiped on every deploy).
+
+**Production upgrade**: `settings.py` now uses `dj-database-url` to auto-select **PostgreSQL** when `DATABASE_URL` is set (Render injects this from the linked `breathe-esg-db` PostgreSQL service) and falls back to SQLite locally. No manual configuration needed.

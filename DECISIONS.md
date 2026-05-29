@@ -12,15 +12,17 @@ This document chronicles every technical and product ambiguity encountered while
 * **Subset Handled**: 
   * Columns with German SAP technical headers (`WERKS` = Plant, `BUDAT` = Posting Date, `MATNR` = Material, `MENGE` = Qty, `MEINS` = Unit, `DMBTR` = Local currency cost).
   * Date formats in German notation (`DD.MM.YYYY`).
-  * Inconsistent units (normalizing `L`, `Ltr`, `Liter`, `KG`, `Kilo` dynamically).
-* **Subset Ignored**: Multi-currency conversions (assumed local/functional currency is matching), complex tax components, and custom material codes (if material is not in lookup, we flag as error and assign confidence score `0` rather than attempting guessing).
+  * Inconsistent units (normalising `L`, `Ltr`, `Liter`, `KG`, `Kilo` dynamically).
+* **Subset Ignored**: Multi-currency conversions (assumed local/functional currency is matching), complex tax components, and custom material codes (if material is not in lookup, flagged as error and assigned `confidence_score = 0`).
+
+**Model impact**: Plant codes (`WERKS`) are resolved against `FacilityProfile` (code + name). Unresolved codes set `facility=None` and store the raw code in `facility_label`.
 
 ### B. Utility Data Ingestion
 * **Ambiguity**: Utility providers rarely offer standard APIs. Facilities teams typically scrape PDF bills (highly prone to OCR errors) or pull CSV exports from their commercial billing portals.
 * **Resolution**: We chose **Billing Portal CSV exports** containing `Meter_ID`, `Start_Date`, `End_Date`, and usage values.
 * **Subset Handled**: 
-  * Meter to Facility mapping using `FacilityLookup`.
-  * **Fencepost date alignment**: Utility billing periods rarely match calendar months (e.g. Apr 15 to May 14). Carbon accounting requires monthly matching. We divide total usage by billing days, allocate the usage daily, and generate independent normalized records for each calendar month representing the exact allocated consumption.
+  * Meter to Facility mapping using `FacilityProfile` (`code` field stores meter serial numbers).
+  * **Fencepost date alignment**: Utility billing periods rarely match calendar months (e.g. Apr 15 to May 14). Carbon accounting requires monthly matching. We divide total usage by billing days, allocate daily, and generate independent `NormalisedEmissionRecord` rows for each calendar month — one per `(raw_row, scope, period_start)` combination.
   * Unit discrepancies (`kWh` vs `MWh`).
 * **Subset Ignored**: Complex tariff components (active vs reactive power, peak-demand surcharge fees, solar grid feeding-in credits). We focused strictly on active power consumption.
 
@@ -38,14 +40,16 @@ This document chronicles every technical and product ambiguity encountered while
 
 ## 2. Rationale behind Product UX Choices
 
-* **The Ledger Audit View**: Instead of displaying just a table of numbers, the detail modal in our React UI exposes the **Exact Raw JSON Payload** from the client's uploaded file. Auditors are deeply suspicious of "black-box" normalization. Exposing the original row allows manual side-by-side reconciliation.
-* **Proactive Flagging over Ingestion Crashing**: If a row has an unmapped plant code or a bad date format, we **do not crash the file upload**. Rejecting a 10,000-row file because row 9,842 has an error is a horrible client experience. Instead, we ingest the row, set its status to `review` or `error`, and surface it in the analyst’s review panel with a quality flag. The analyst can correct or resolve it in-app.
+* **The Ledger Audit View**: Instead of displaying just a table of numbers, the detail modal exposes the **exact raw JSON payload** from the client's uploaded file (stored in `RawIngestedRow.raw_payload`). Auditors can perform manual side-by-side reconciliation against the source.
+* **Proactive Flagging over Ingestion Crashing**: If a row has an unmapped plant code or a bad date format, we **do not crash the file upload**. We ingest the row, set `review_status = NEEDS_REVIEW` and `confidence_score` accordingly, and surface it in the analyst's review panel. The analyst resolves it in-app.
+* **`co2e_kg` Always in Kilograms**: All emission records store GHG impact in **kg CO₂e** regardless of scope or source. This allows safe cross-scope aggregation (`SUM(co2e_kg)`) without any unit conversion at query time. Parser-level factors (stored in tCO₂e) are multiplied by 1000 before writing to the DB.
 
 ---
 
 ## 3. Top Questions for the Product Manager (PM)
 
 If we were to expand this prototype into a full enterprise feature, we would align on the following:
-1. **Target Emissions Engine**: Do we need to integrate with a certified emissions factor database (e.g. Climatiq, DEFRA, EPA, or GHG Protocol) via API, or will client sustainability analysts provide their own custom override factors per facility?
-2. **ERP Connectivity**: Should we develop an active SAP OData Connector for direct automated sync, or is the CSV batch export model the preferred onboarding friction-reducer?
-3. **Audit Ledger Sign-off Hierarchy**: Once a record is locked, who is authorized to unlock it? Do we need a multi-tiered approval hierarchy (e.g., Analyst drafts, Manager approves, Auditor locks)?
+1. **Certified Emissions Factor Database**: Integrate with Climatiq, DEFRA, EPA, or GHG Protocol via API, or allow client sustainability analysts to supply custom override factors per facility via the `EmissionFactor` table?
+2. **ERP Connectivity**: Build an active SAP OData Connector for direct automated sync, or keep the CSV batch export model as the preferred low-friction onboarding path?
+3. **Audit Sign-off Hierarchy**: Who can transition a record from `APPROVED` to `LOCKED`? Do we need a multi-tiered approval hierarchy using the `ESGUser.role` field (Analyst drafts → Manager approves → Auditor locks)?
+4. **`EmissionFactor` Governance**: When EPA/DEFRA publishes annual updates, how do we re-derive historical `co2e_kg` values for already-approved records without violating their `LOCKED` state?
