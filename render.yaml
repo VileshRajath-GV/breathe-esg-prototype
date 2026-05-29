@@ -14,7 +14,7 @@ services:
         generateValue: true
 
   # React Static Site
-  - type: web
+  - type: static
     name: breathe-esg-frontend
     env: static
     buildCommand: "cd frontend && npm install && npm run build"
