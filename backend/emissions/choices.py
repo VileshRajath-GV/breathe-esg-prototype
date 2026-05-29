@@ -39,3 +39,6 @@ class NormalisedUnit(models.TextChoices):
     MJ         = "MJ",      "Megajoules"
     LITRE      = "L",       "Litres"
     KM         = "km",      "Kilometres"
+    KG         = "kg",      "Kilograms"
+    NIGHT      = "night",   "Room-nights"
+    MILE       = "mile",    "Miles"

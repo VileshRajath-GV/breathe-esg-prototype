@@ -272,10 +272,12 @@ class NormalisedEmissionRecord(models.Model):
     class Meta:
         db_table    = "esg_emission_record"
         constraints = [
-            # One normalised record per scope per raw row — prevents double-counting
+            # One normalised record per scope per raw row per period —
+            # period_start is included so utility billing rows that span
+            # multiple months can produce one SCOPE_2 record per month.
             models.UniqueConstraint(
-                fields=["raw_row", "scope"],
-                name="uq_emission_raw_row_scope"
+                fields=["raw_row", "scope", "period_start"],
+                name="uq_emission_raw_row_scope_period"
             ),
             # period_end must be on or after period_start
             models.CheckConstraint(
