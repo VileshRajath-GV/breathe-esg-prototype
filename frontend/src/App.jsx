@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import ReviewPanel from "./components/ReviewPanel";
 import Footer from "./components/Footer";
 import { ArrowRight, Zap, Info, FileText, CheckCircle, ShieldAlert } from "lucide-react";
+import { API_BASE_URL } from "./config";
 
 export default function App() {
   const [tenant, setTenant] = useState(null);
@@ -14,7 +15,7 @@ export default function App() {
 
   useEffect(() => {
     // Dynamically fetch the first tenant seeded in the database
-    fetch("http://127.0.0.1:8000/api/tenants/")
+    fetch(`${API_BASE_URL}/api/tenants/`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.length > 0) {

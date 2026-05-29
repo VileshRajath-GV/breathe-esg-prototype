@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Leaf, Shield, User, PlusCircle, Check, Loader2 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 export default function Header({ tenant, setTenant }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,7 +26,7 @@ export default function Header({ tenant, setTenant }) {
 
   const loadTenants = () => {
     setLoadingTenants(true);
-    fetch("http://127.0.0.1:8000/api/tenants/")
+    fetch(`${API_BASE_URL}/api/tenants/`)
       .then((res) => res.json())
       .then((data) => {
         setTenantsList(data);
@@ -42,7 +43,7 @@ export default function Header({ tenant, setTenant }) {
     if (!newTenantName.trim()) return;
 
     setCreatingTenant(true);
-    fetch("http://127.0.0.1:8000/api/tenants/", {
+    fetch(`${API_BASE_URL}/api/tenants/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

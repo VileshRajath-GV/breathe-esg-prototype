@@ -12,6 +12,7 @@ import {
   Loader2,
   FileCode,
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 export default function ReviewPanel({ tenantId, refreshTrigger }) {
   const [records, setRecords] = useState([]);
@@ -29,7 +30,7 @@ export default function ReviewPanel({ tenantId, refreshTrigger }) {
     if (!tenantId) return;
 
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/records/?tenant_id=${tenantId}&status=${filterStatus}`)
+    fetch(`${API_BASE_URL}/api/records/?tenant_id=${tenantId}&status=${filterStatus}`)
       .then((res) => res.json())
       .then((data) => {
         setRecords(data);
@@ -77,7 +78,7 @@ export default function ReviewPanel({ tenantId, refreshTrigger }) {
     if (!selectedDetail) return;
     setIsSubmitting(true);
 
-    fetch(`http://127.0.0.1:8000/api/records/${selectedDetail.id}/approve/`, {
+    fetch(`${API_BASE_URL}/api/records/${selectedDetail.id}/approve/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -105,13 +106,13 @@ export default function ReviewPanel({ tenantId, refreshTrigger }) {
 
   const handleFlag = (statusVal) => {
     if (!selectedDetail) return;
-    if (!actionComment.strip && actionComment.trim() === "") {
+    if (actionComment.trim() === "") {
       alert("Please provide an audit comment explaining why this record is being flagged.");
       return;
     }
     setIsSubmitting(true);
 
-    fetch(`http://127.0.0.1:8000/api/records/${selectedDetail.id}/flag/`, {
+    fetch(`${API_BASE_URL}/api/records/${selectedDetail.id}/flag/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, File, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 export default function FileUpload({ tenantId, onUploadSuccess }) {
   const [sourceType, setSourceType] = useState("SAP"); // 'SAP', 'Utility', 'Travel'
@@ -74,7 +75,7 @@ export default function FileUpload({ tenantId, onUploadSuccess }) {
     formData.append("source_type", sourceType);
     formData.append("tenant_id", tenantId);
 
-    fetch("http://127.0.0.1:8000/api/ingest/", {
+    fetch(`${API_BASE_URL}/api/ingest/`, {
       method: "POST",
       body: formData,
     })

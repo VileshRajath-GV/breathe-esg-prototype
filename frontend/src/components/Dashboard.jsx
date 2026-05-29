@@ -9,6 +9,7 @@ import {
   ArrowDown,
   Loader2,
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 const StatCard = ({ label, value, icon: Icon, color, delay }) => {
   return (
@@ -73,7 +74,7 @@ export default function Dashboard({ tenantId, refreshTrigger }) {
     if (!tenantId) return;
     
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/dashboard/summary/?tenant_id=${tenantId}`)
+    fetch(`${API_BASE_URL}/api/dashboard/summary/?tenant_id=${tenantId}`)
       .then((res) => res.json())
       .then((summary) => {
         setData(summary);

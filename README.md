@@ -73,6 +73,41 @@ npm run dev
 
 ---
 
+## 🚀 Production Deployment Guide
+
+Deploying this prototype to production (which is a mandatory requirement) is simple and streamlined.
+
+### Option A: Render (One-Click Blueprint)
+We have included a pre-configured `render.yaml` file in the root directory. This coordinates the build and deploy steps for both the backend (Django Web Service with SQLite) and the frontend (React Static Site) automatically.
+
+1. Push your repository to **GitHub** or **GitLab**.
+2. Log in to [Render](https://render.com/).
+3. In the Render Dashboard, click **New** -> **Blueprint**.
+4. Connect your GitHub repository.
+5. Render will automatically parse `render.yaml`, configure the environment variables, set up `VITE_API_URL` dynamically, link them together, and deploy!
+6. Once deployed, Render will provide a live URL for your static frontend.
+
+### Option B: Railway Deployment
+Railway offers quick, independent web deployments:
+
+1. **Deploy Backend (Django)**:
+   - Create a new project on Railway and connect your repository.
+   - Set the root directory of the service to `backend/`.
+   - Set the Start Command to: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
+   - Set Environment Variables:
+     - `DEBUG=False`
+     - `ALLOWED_HOSTS=*`
+   - Railway will provision a public URL for your Django service (e.g., `https://breathe-backend.up.railway.app`).
+
+2. **Deploy Frontend (React)**:
+   - Create a second service in the same project, connecting your repository.
+   - Set the root directory to `frontend/`.
+   - Set Environment Variable:
+     - `VITE_API_URL=https://breathe-backend.up.railway.app` (your backend URL)
+   - Railway will build and serve your React app statically and link it to your live backend.
+
+---
+
 ## 🧪 Testing and Verification
 
 ### Automated Unit Tests

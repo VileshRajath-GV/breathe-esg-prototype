@@ -1,42 +1,17 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Database
-db.sqlite3
-db.sqlite3-journal
-
-# Virtual Environment
+# Python virtual environments
 backend/venv/
-.venv/
-env/
 venv/
-ENV/
+*.pyc
+__pycache__/
+*.sqlite3
 
-# Node.js
-node_modules/
+# Node / React dependencies
 frontend/node_modules/
-.npm
-npm-debug.log*
+frontend/dist/
+.eslintcache
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Environments / secrets
+# Local configurations and temporary files
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local*
-
-# IDEs
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.DS_Store
+Thumbs.db
