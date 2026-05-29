@@ -1,0 +1,39 @@
+[
+  {
+    "booking_id": "T-88219",
+    "employee_email": "johndoe@breatheesg.com",
+    "type": "flight",
+    "origin_airport": "JFK",
+    "destination_airport": "LHR",
+    "distance_miles": null,
+    "class": "business",
+    "booking_date": "2026-05-28"
+  },
+  {
+    "booking_id": "T-99821",
+    "employee_email": "janesmith@breatheesg.com",
+    "type": "hotel",
+    "room_nights": 4,
+    "booking_date": "2026-05-25"
+  },
+  {
+    "booking_id": "T-44810",
+    "employee_email": "robert@breatheesg.com",
+    "type": "flight",
+    "origin_airport": "SFO",
+    "destination_airport": "LAX",
+    "distance_miles": 337,
+    "class": "economy",
+    "booking_date": "2026-05-20"
+  },
+  {
+    "booking_id": "T-55102",
+    "employee_email": "alice@breatheesg.com",
+    "type": "flight",
+    "origin_airport": "ABC",
+    "destination_airport": "XYZ",
+    "distance_miles": null,
+    "class": "economy",
+    "booking_date": "2026-05-18"
+  }
+]
