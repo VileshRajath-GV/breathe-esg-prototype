@@ -17,6 +17,12 @@ INSTALLED_APPS = [
     'reviews',
 ]
 
+# Custom user model (role-based, tenant-scoped)
+AUTH_USER_MODEL = 'tenants.ESGUser'
+
+# Suppress auto-field system check warnings
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

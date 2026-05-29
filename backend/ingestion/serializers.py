@@ -1,12 +1,18 @@
 from rest_framework import serializers
-from ingestion.models import UploadBatch, RawIngestedData
+from ingestion.models import UploadBatch, RawIngestedRow
+
 
 class UploadBatchSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UploadBatch
+        model  = UploadBatch
         fields = '__all__'
 
-class RawIngestedDataSerializer(serializers.ModelSerializer):
+
+class RawIngestedRowSerializer(serializers.ModelSerializer):
     class Meta:
-        model = RawIngestedData
+        model  = RawIngestedRow
         fields = '__all__'
+
+
+# Backwards-compatible alias
+RawIngestedDataSerializer = RawIngestedRowSerializer

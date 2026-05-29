@@ -1,7 +1,18 @@
 from rest_framework import serializers
-from reviews.models import AuditTrail
+from reviews.models import AuditEntry, ReviewComment
 
-class AuditTrailSerializer(serializers.ModelSerializer):
+
+class AuditEntrySerializer(serializers.ModelSerializer):
     class Meta:
-        model = AuditTrail
+        model  = AuditEntry
         fields = '__all__'
+
+
+class ReviewCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = ReviewComment
+        fields = '__all__'
+
+
+# Backwards-compatible alias
+AuditTrailSerializer = AuditEntrySerializer

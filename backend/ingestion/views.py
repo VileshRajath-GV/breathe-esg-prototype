@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime
 from django.core.files.storage import default_storage
 from rest_framework import status, views
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -35,9 +36,11 @@ class FileIngestionView(views.APIView):
         # 1. Create UploadBatch
         batch = UploadBatch.objects.create(
             tenant=tenant,
-            filename=file_obj.name,
+            name=file_obj.name,          # human label defaults to filename
+            external_ref=file_obj.name,  # preserves original filename for traceability
             source_type=source_type,
-            status='processing'
+            status='PROCESSING',
+            reporting_year=int(request.data.get('reporting_year', datetime.today().year))
         )
 
         # 2. Save file temporarily
@@ -65,7 +68,7 @@ class FileIngestionView(views.APIView):
                 os.remove(temp_file_path)
 
             # 4. Mark batch completed
-            batch.status = 'completed'
+            batch.status = 'COMPLETED'
             batch.row_count = rows_processed
             batch.save()
 
@@ -77,7 +80,7 @@ class FileIngestionView(views.APIView):
 
         except Exception as e:
             # Mark batch failed
-            batch.status = 'failed'
+            batch.status = 'FAILED'
             batch.error_summary = str(e)
             batch.save()
             

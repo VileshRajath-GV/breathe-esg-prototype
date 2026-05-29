@@ -5,13 +5,20 @@ from rest_framework import viewsets, status, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from emissions.models import FacilityLookup, NormalizedRecord
-from emissions.serializers import FacilityLookupSerializer, NormalizedRecordSerializer
-from reviews.models import AuditTrail
+from emissions.models import FacilityProfile, NormalisedEmissionRecord
+from emissions.serializers import (
+    FacilityProfileSerializer,
+    NormalisedEmissionRecordSerializer,
+    # Backwards-compatible aliases kept for any external import
+    FacilityLookupSerializer,
+    NormalizedRecordSerializer,
+)
+from reviews.models import AuditEntry
 
 class FacilityLookupViewSet(viewsets.ModelViewSet):
-    queryset = FacilityLookup.objects.all()
-    serializer_class = FacilityLookupSerializer
+    """Viewset for FacilityProfile — name kept for URL router backwards-compat."""
+    queryset = FacilityProfile.objects.all()
+    serializer_class = FacilityProfileSerializer
 
     def get_queryset(self):
         tenant_id = self.request.query_params.get('tenant_id')
@@ -20,98 +27,81 @@ class FacilityLookupViewSet(viewsets.ModelViewSet):
         return self.queryset
 
 class NormalizedRecordViewSet(viewsets.ModelViewSet):
-    queryset = NormalizedRecord.objects.all()
-    serializer_class = NormalizedRecordSerializer
+    """Viewset for NormalisedEmissionRecord — name kept for URL router backwards-compat."""
+    queryset = NormalisedEmissionRecord.objects.all()
+    serializer_class = NormalisedEmissionRecordSerializer
 
     def get_queryset(self):
         queryset = self.queryset
         tenant_id = self.request.query_params.get('tenant_id')
         status_filter = self.request.query_params.get('status')
-        
+
         if tenant_id:
             queryset = queryset.filter(tenant_id=tenant_id)
-        
+
         if status_filter and status_filter != 'all':
-            if status_filter == 'review':
-                queryset = queryset.filter(status='review')
-            elif status_filter == 'error':
-                queryset = queryset.filter(status='error')
-            elif status_filter == 'validated':
-                queryset = queryset.filter(status='validated')
-        
+            status_map = {
+                'review': 'NEEDS_REVIEW',
+                'error':  'NEEDS_REVIEW',
+                'validated': 'APPROVED',
+            }
+            mapped = status_map.get(status_filter)
+            if mapped:
+                queryset = queryset.filter(review_status=mapped)
+
         return queryset
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         record = self.get_object()
-        if record.is_locked:
-            return Response({"error": "Record is already approved and locked."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        old_values = {
-            "status": record.status,
-            "is_locked": record.is_locked
-        }
+        from emissions.choices import ReviewStatus
+        if record.review_status == ReviewStatus.LOCKED:
+            return Response({"error": "Record is already locked for audit."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Approve and Lock
-        record.status = 'validated'
-        record.is_locked = True
+        old_status = record.review_status
+        record.review_status = ReviewStatus.APPROVED
         record.save()
 
-        new_values = {
-            "status": record.status,
-            "is_locked": record.is_locked
-        }
-
-        # Log audit trail
-        AuditTrail.objects.create(
+        AuditEntry.objects.create(
             tenant=record.tenant,
-            record=record,
-            action='approve',
-            performed_by=request.data.get('performed_by', 'Sustainability Analyst'),
-            old_values=old_values,
-            new_values=new_values,
-            comment=request.data.get('comment', 'Approved and locked for audit.')
+            object_type="NormalisedEmissionRecord",
+            object_id=record.id,
+            action=AuditEntry.ACTION_STATUS_CHANGE,
+            field_name="review_status",
+            before_value=old_status,
+            after_value=record.review_status,
+            note=request.data.get('comment', 'Approved by analyst.')
         )
 
-        return Response(NormalizedRecordSerializer(record).data)
+        return Response(NormalisedEmissionRecordSerializer(record).data)
 
     @action(detail=True, methods=['post'])
     def flag(self, request, pk=None):
         record = self.get_object()
-        if record.is_locked:
+        from emissions.choices import ReviewStatus
+        if record.review_status == ReviewStatus.LOCKED:
             return Response({"error": "Cannot flag a locked record."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        new_status = request.data.get('status', 'review')
-        if new_status not in ['review', 'error']:
-            return Response({"error": "Invalid status for flagging. Must be 'review' or 'error'."}, status=status.HTTP_400_BAD_REQUEST)
 
-        old_values = {
-            "status": record.status,
-            "validation_notes": record.validation_notes
-        }
-
-        record.status = new_status
+        old_status = record.review_status
+        record.review_status = ReviewStatus.NEEDS_REVIEW
         comment = request.data.get('comment', 'Flagged by analyst.')
-        record.validation_notes = f"{record.validation_notes}; [Flagged]: {comment}"
+        record.review_notes = f"{record.review_notes}; [Flagged]: {comment}".strip('; ')
+        record.anomaly_flag = True
+        record.anomaly_reason = comment
         record.save()
 
-        new_values = {
-            "status": record.status,
-            "validation_notes": record.validation_notes
-        }
-
-        # Log audit trail
-        AuditTrail.objects.create(
+        AuditEntry.objects.create(
             tenant=record.tenant,
-            record=record,
-            action='flag',
-            performed_by=request.data.get('performed_by', 'Sustainability Analyst'),
-            old_values=old_values,
-            new_values=new_values,
-            comment=comment
+            object_type="NormalisedEmissionRecord",
+            object_id=record.id,
+            action=AuditEntry.ACTION_STATUS_CHANGE,
+            field_name="review_status",
+            before_value=old_status,
+            after_value=record.review_status,
+            note=comment
         )
 
-        return Response(NormalizedRecordSerializer(record).data)
+        return Response(NormalisedEmissionRecordSerializer(record).data)
 
 
 class DashboardSummaryView(views.APIView):
@@ -119,22 +109,27 @@ class DashboardSummaryView(views.APIView):
         tenant_id = self.request.query_params.get('tenant_id')
         if not tenant_id:
             return Response({"error": "Missing tenant_id"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        records = NormalizedRecord.objects.filter(tenant_id=tenant_id)
+
+        records = NormalisedEmissionRecord.objects.filter(tenant_id=tenant_id)
         
         total_records = records.count()
-        scope1_sum = records.filter(scope='Scope 1').aggregate(Sum('normalized_value_tco2e'))['normalized_value_tco2e__sum'] or 0
-        scope2_sum = records.filter(scope='Scope 2').aggregate(Sum('normalized_value_tco2e'))['normalized_value_tco2e__sum'] or 0
-        scope3_sum = records.filter(scope='Scope 3').aggregate(Sum('normalized_value_tco2e'))['normalized_value_tco2e__sum'] or 0
+        scope1_sum = records.filter(scope='SCOPE_1').aggregate(Sum('co2e_kg'))['co2e_kg__sum'] or 0
+        scope2_sum = records.filter(scope='SCOPE_2').aggregate(Sum('co2e_kg'))['co2e_kg__sum'] or 0
+        scope3_sum = records.filter(scope='SCOPE_3').aggregate(Sum('co2e_kg'))['co2e_kg__sum'] or 0
         avg_confidence = records.aggregate(Avg('confidence_score'))['confidence_score__avg'] or 0
-        
+
         # Calculate monthly trends
         today = datetime.today().date()
         one_year_ago = today - timedelta(days=365)
-        
-        trend_records = records.filter(transaction_date__gte=one_year_ago)
-        monthly_trend = trend_records.annotate(month=TruncMonth('transaction_date')).values('month').annotate(total=Sum('normalized_value_tco2e')).order_by('month')
-        
+
+        trend_records = records.filter(period_start__gte=one_year_ago)
+        monthly_trend = (
+            trend_records
+            .annotate(month=TruncMonth('period_start'))
+            .values('month')
+            .annotate(total=Sum('co2e_kg'))
+            .order_by('month')
+        )
         trend_data = []
         months_dict = {}
         for m in monthly_trend:
