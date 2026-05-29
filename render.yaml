@@ -5,7 +5,7 @@ services:
     env: python
     plan: free
     buildCommand: "cd backend && pip install -r requirements.txt && python manage.py migrate --noinput && python seed.py"
-    startCommand: "cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn --pythonpath backend config.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
