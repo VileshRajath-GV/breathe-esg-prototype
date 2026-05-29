@@ -24,7 +24,4 @@ services:
     staticPublishPath: "frontend/dist"
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: breathe-esg-backend
-          property: host
+        value: "https://breathe-esg-backend-96rl.onrender.com"
